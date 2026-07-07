@@ -3,19 +3,9 @@ const LIM_TURNOS_3=['Mañana','Tarde','Noche'];
 const LIM_TURNOS_2=['Mañana','Tarde'];
 const LIM_BANO_OFICINA_DEFAULT=['Limpieza de baños','Limpieza de oficina','Reposición de papel y jabón'];
 
-// Después de las 10:30pm el checklist del día queda bloqueado (no editable).
-// Al día siguiente, como cambia la fecha, se vuelve a habilitar automáticamente.
-const LIM_HORA_BLOQUEO = {h:22, m:30};
-function limpiezaBloqueadaPorHora(){
-  const ahora = new Date();
-  const limite = new Date();
-  limite.setHours(LIM_HORA_BLOQUEO.h, LIM_HORA_BLOQUEO.m, 0, 0);
-  return ahora >= limite;
-}
-
-// Cuando se selecciona un día del historial, se guarda aquí su key.
-// null = viendo el día de hoy (editable). Con valor = viendo un día pasado
-// (siempre de solo lectura, sin importar la hora).
+// El día se cierra cuando el usuario presiona "Guardar" (pensado para el
+// final del último turno). Desde ese momento queda bloqueado por completo
+// hasta el día siguiente, sin importar la hora en la que se haya guardado.
 let limViewKey = null;
 
 function buildLimpieza(){
@@ -24,8 +14,8 @@ function buildLimpieza(){
   let saved = {};
   try { const raw=localStorage.getItem(key); if(raw) saved=JSON.parse(raw); } catch(e){}
   const esHistorial = !!limViewKey;
-  const bloqueadoHora = !esHistorial && limpiezaBloqueadaPorHora();
-  const readOnly = esHistorial || bloqueadoHora;
+  const cerradoHoy = !esHistorial && !!saved._cerrado;
+  const readOnly = esHistorial || cerradoHoy;
 
   const histBanner = document.getElementById('lim-historial-banner');
   if(histBanner) histBanner.style.display = esHistorial ? 'block' : 'none';
@@ -33,8 +23,8 @@ function buildLimpieza(){
     document.getElementById('lim-hist-fecha-label').textContent = saved._fecha || '—';
     document.getElementById('lim-hist-turno-label').textContent = 'día completo';
   }
-  const bloqueoBanner = document.getElementById('lim-bloqueo-banner');
-  if(bloqueoBanner) bloqueoBanner.style.display = bloqueadoHora ? 'block' : 'none';
+  const cierreBanner = document.getElementById('lim-bloqueo-banner');
+  if(cierreBanner) cierreBanner.style.display = cerradoHoy ? 'block' : 'none';
 
   document.getElementById('lim-fecha-hoy').textContent = new Date().toLocaleDateString('es-PE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   buildZoneLim('zone-general-lim', DB.limpiezaTareasGenerales, 'gen', saved, readOnly, 'limpiezaTareasGenerales');
@@ -45,18 +35,17 @@ function buildLimpieza(){
   buildZoneCustomLim(saved, readOnly);
   document.getElementById('lim-obs-txt').value = saved._obs || '';
   document.getElementById('lim-obs-txt').disabled = readOnly;
-  document.querySelectorAll('#sec-limpieza .btn-primary').forEach(b=>{
-    if(b.getAttribute('onclick')==="guardarLimpiezaDia()"){ b.disabled = readOnly; b.style.opacity = readOnly?'.5':''; }
-  });
+  const btnGuardar = document.getElementById('btn-guardar-lim');
+  if(btnGuardar){ btnGuardar.disabled = readOnly; btnGuardar.style.opacity = readOnly?'.5':''; }
   updateLimpieza();
 }
 
 // Se llama en cada check individual: actualiza la barra de progreso y
 // guarda en segundo plano para que nada se pierda si se sale de la página.
-// Solo guarda si se está viendo el día de hoy (nunca si se está en historial).
+// Nunca cierra el día — solo lo hace el botón "Guardar".
 function limChange(){
   updateLimpieza();
-  if(!limViewKey && !limpiezaBloqueadaPorHora()) guardarLimpiezaDia(true);
+  if(!limViewKey) guardarLimpiezaDia(true);
 }
 
 function addTareaLim(dbKey, inputId){
@@ -166,13 +155,16 @@ function updateLimpieza(){
 }
 
 function guardarLimpiezaDia(silencioso){
-  if(limpiezaBloqueadaPorHora()){
-    if(!silencioso) toast('El checklist de hoy ya está bloqueado (después de las 10:30pm).','warn');
-    return;
-  }
   const fecha = today();
   const key = `lim_${fecha}_dia`;
-  const data = { _fecha:fecha, _usuario:currentUser, _guardado:new Date().toISOString() };
+  let prev = {};
+  try { const raw=localStorage.getItem(key); if(raw) prev=JSON.parse(raw); } catch(e){}
+  if(prev._cerrado){
+    if(!silencioso) toast('El checklist de hoy ya está cerrado.','warn');
+    return;
+  }
+  if(!silencioso && !confirm('¿Guardar y cerrar el checklist de hoy?\nYa no podrás editarlo hasta mañana.')) return;
+  const data = { _fecha:fecha, _usuario:currentUser, _guardado:new Date().toISOString(), _cerrado: !silencioso };
   DB.limpiezaTareasGenerales.forEach((_,i)=>{ const el=document.getElementById(`gen-${i}`); if(el) data[`gen_${i}`]=el.checked; });
   LIM_TURNOS_2.forEach((_,i)=>{ const el=document.getElementById(`mer-${i}`); if(el) data[`mer_${i}`]=el.checked; });
   LIM_TURNOS_3.forEach((_,i)=>{ const el=document.getElementById(`fru-${i}`); if(el) data[`fru_${i}`]=el.checked; });
@@ -188,7 +180,8 @@ function guardarLimpiezaDia(silencioso){
   cargarFechasHistorialLim();
   const msg = document.getElementById('lim-save-msg');
   msg.style.display='inline-flex'; setTimeout(()=>msg.style.display='none',2500);
-  toast('Checklist guardado — el siguiente turno puede seguir marcando','ok');
+  toast('Checklist cerrado. Mañana se abre uno nuevo.','ok');
+  buildLimpieza();
 }
 
 function cargarFechasHistorialLim(){
