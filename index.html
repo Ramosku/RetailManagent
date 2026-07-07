@@ -165,7 +165,6 @@
             <select id="lim-fecha-hist" onchange="cargarLimpiezaHistorial()" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;color:var(--text2)">
               <option value="">📅 Ver día anterior...</option>
             </select>
-            <button class="btn btn-sm btn-primary" onclick="guardarLimpiezaDia()"><i class="ti ti-device-floppy"></i> Guardar turno</button>
           </div>
         </div>
         <div class="card" style="padding:.75rem 1.25rem;margin-bottom:1rem">
@@ -179,7 +178,7 @@
           <div class="prog-bar" style="margin-top:.6rem"><div class="prog-fill" id="lim-prog-bar" style="width:0%"></div></div>
         </div>
         <div id="lim-bloqueo-banner" style="display:none;margin-bottom:1rem">
-          <div class="alert alert-warn"><i class="ti ti-lock"></i> El checklist de hoy quedó <strong>bloqueado a partir de las 10:30pm</strong>. Se habilitará automáticamente mañana.</div>
+          <div class="alert alert-warn"><i class="ti ti-lock"></i> El checklist de hoy ya fue <strong>guardado y cerrado</strong>. Mañana se abrirá uno nuevo en blanco.</div>
         </div>
         <div id="lim-historial-banner" style="display:none;margin-bottom:1rem">
           <div class="alert alert-info"><i class="ti ti-eye"></i> Viendo historial del <strong id="lim-hist-fecha-label"></strong> — Turno <strong id="lim-hist-turno-label"></strong>. <a href="#" onclick="cerrarHistorialLim();return false" style="color:var(--blue);font-weight:600">Volver al día de hoy</a> · <a href="#" onclick="borrarHistorialLimActual();return false" style="color:var(--red);font-weight:600"><i class="ti ti-trash"></i> Borrar este historial</a></div>
@@ -211,7 +210,7 @@
           <div class="card-title" style="margin-bottom:.75rem"><i class="ti ti-notes" style="color:var(--text2)"></i> Observaciones del turno</div>
           <textarea id="lim-obs-txt" rows="3" placeholder="Agrega notas u observaciones del turno..." style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;resize:vertical"></textarea>
           <div style="margin-top:.75rem;display:flex;gap:8px;align-items:center">
-            <button class="btn btn-primary" onclick="guardarLimpiezaDia()"><i class="ti ti-device-floppy"></i> Guardar y cerrar turno</button>
+            <button class="btn btn-primary" id="btn-guardar-lim" onclick="guardarLimpiezaDia()"><i class="ti ti-device-floppy"></i> Guardar y cerrar el día</button>
             <span id="lim-save-msg" style="font-size:12px;color:var(--green);display:none"><i class="ti ti-check"></i> Guardado correctamente</span>
           </div>
         </div>
