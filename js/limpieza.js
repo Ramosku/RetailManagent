@@ -13,16 +13,29 @@ function limpiezaBloqueadaPorHora(){
   return ahora >= limite;
 }
 
+// Cuando se selecciona un día del historial, se guarda aquí su key.
+// null = viendo el día de hoy (editable). Con valor = viendo un día pasado
+// (siempre de solo lectura, sin importar la hora).
+let limViewKey = null;
+
 function buildLimpieza(){
-  const fecha = today();
-  const key = `lim_${fecha}_dia`;
+  const fechaHoy = today();
+  const key = limViewKey || `lim_${fechaHoy}_dia`;
   let saved = {};
   try { const raw=localStorage.getItem(key); if(raw) saved=JSON.parse(raw); } catch(e){}
-  const esHistorial = !!saved._historial;
+  const esHistorial = !!limViewKey;
   const bloqueadoHora = !esHistorial && limpiezaBloqueadaPorHora();
   const readOnly = esHistorial || bloqueadoHora;
-  const banner = document.getElementById('lim-bloqueo-banner');
-  if(banner) banner.style.display = bloqueadoHora ? 'block' : 'none';
+
+  const histBanner = document.getElementById('lim-historial-banner');
+  if(histBanner) histBanner.style.display = esHistorial ? 'block' : 'none';
+  if(esHistorial){
+    document.getElementById('lim-hist-fecha-label').textContent = saved._fecha || '—';
+    document.getElementById('lim-hist-turno-label').textContent = 'día completo';
+  }
+  const bloqueoBanner = document.getElementById('lim-bloqueo-banner');
+  if(bloqueoBanner) bloqueoBanner.style.display = bloqueadoHora ? 'block' : 'none';
+
   document.getElementById('lim-fecha-hoy').textContent = new Date().toLocaleDateString('es-PE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   buildZoneLim('zone-general-lim', DB.limpiezaTareasGenerales, 'gen', saved, readOnly, 'limpiezaTareasGenerales');
   buildTurnosLim('zone-merma-lim', LIM_TURNOS_2, 'mer', saved, readOnly, '¿Se realizó la merma?');
@@ -30,19 +43,20 @@ function buildLimpieza(){
   buildTurnosLim('zone-checklist-lim', LIM_TURNOS_3, 'chk', saved, readOnly, '¿Se realizó el checklist?');
   buildZoneLim('zone-bano-oficina-lim', DB.limpiezaTareasBano, 'bano', saved, readOnly, 'limpiezaTareasBano');
   buildZoneCustomLim(saved, readOnly);
-  if(saved._obs) document.getElementById('lim-obs-txt').value = saved._obs;
+  document.getElementById('lim-obs-txt').value = saved._obs || '';
   document.getElementById('lim-obs-txt').disabled = readOnly;
   document.querySelectorAll('#sec-limpieza .btn-primary').forEach(b=>{
-    if(b.getAttribute('onclick')==="guardarLimpiezaDia()"){ b.disabled = bloqueadoHora; b.style.opacity = bloqueadoHora?'.5':''; }
+    if(b.getAttribute('onclick')==="guardarLimpiezaDia()"){ b.disabled = readOnly; b.style.opacity = readOnly?'.5':''; }
   });
   updateLimpieza();
 }
 
 // Se llama en cada check individual: actualiza la barra de progreso y
 // guarda en segundo plano para que nada se pierda si se sale de la página.
+// Solo guarda si se está viendo el día de hoy (nunca si se está en historial).
 function limChange(){
   updateLimpieza();
-  if(!limpiezaBloqueadaPorHora()) guardarLimpiezaDia(true);
+  if(!limViewKey && !limpiezaBloqueadaPorHora()) guardarLimpiezaDia(true);
 }
 
 function addTareaLim(dbKey, inputId){
@@ -179,7 +193,8 @@ function guardarLimpiezaDia(silencioso){
 
 function cargarFechasHistorialLim(){
   const sel = document.getElementById('lim-fecha-hist');
-  const keys = Object.keys(localStorage).filter(k=>k.startsWith('lim_')).sort().reverse();
+  const todayKey = `lim_${today()}_dia`;
+  const keys = Object.keys(localStorage).filter(k=>k.startsWith('lim_') && k!==todayKey).sort().reverse();
   sel.innerHTML = '<option value="">📅 Ver día anterior...</option>';
   keys.forEach(k=>{
     try { const d=JSON.parse(localStorage.getItem(k)); sel.innerHTML += `<option value="${k}">📅 ${d._fecha}</option>`; } catch(e){}
@@ -189,17 +204,12 @@ function cargarFechasHistorialLim(){
 function cargarLimpiezaHistorial(){
   const key = document.getElementById('lim-fecha-hist').value;
   if(!key){ cerrarHistorialLim(); return; }
-  let saved={};
-  try { const raw=localStorage.getItem(key); if(raw) saved=JSON.parse(raw); } catch(e){}
-  saved._historial = true;
-  document.getElementById('lim-historial-banner').style.display='block';
-  document.getElementById('lim-hist-fecha-label').textContent = saved._fecha||'—';
-  document.getElementById('lim-hist-turno-label').textContent = 'día completo';
+  limViewKey = key;
   buildLimpieza();
 }
 
 function cerrarHistorialLim(){
-  document.getElementById('lim-historial-banner').style.display='none';
+  limViewKey = null;
   document.getElementById('lim-fecha-hist').value='';
   buildLimpieza();
 }
