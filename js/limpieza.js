@@ -3,12 +3,26 @@ const LIM_TURNOS_3=['Mañana','Tarde','Noche'];
 const LIM_TURNOS_2=['Mañana','Tarde'];
 const LIM_BANO_OFICINA_DEFAULT=['Limpieza de baños','Limpieza de oficina','Reposición de papel y jabón'];
 
+// Después de las 10:30pm el checklist del día queda bloqueado (no editable).
+// Al día siguiente, como cambia la fecha, se vuelve a habilitar automáticamente.
+const LIM_HORA_BLOQUEO = {h:22, m:30};
+function limpiezaBloqueadaPorHora(){
+  const ahora = new Date();
+  const limite = new Date();
+  limite.setHours(LIM_HORA_BLOQUEO.h, LIM_HORA_BLOQUEO.m, 0, 0);
+  return ahora >= limite;
+}
+
 function buildLimpieza(){
   const fecha = today();
   const key = `lim_${fecha}_dia`;
   let saved = {};
   try { const raw=localStorage.getItem(key); if(raw) saved=JSON.parse(raw); } catch(e){}
-  const readOnly = !!saved._historial;
+  const esHistorial = !!saved._historial;
+  const bloqueadoHora = !esHistorial && limpiezaBloqueadaPorHora();
+  const readOnly = esHistorial || bloqueadoHora;
+  const banner = document.getElementById('lim-bloqueo-banner');
+  if(banner) banner.style.display = bloqueadoHora ? 'block' : 'none';
   document.getElementById('lim-fecha-hoy').textContent = new Date().toLocaleDateString('es-PE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   buildZoneLim('zone-general-lim', DB.limpiezaTareasGenerales, 'gen', saved, readOnly, 'limpiezaTareasGenerales');
   buildTurnosLim('zone-merma-lim', LIM_TURNOS_2, 'mer', saved, readOnly, '¿Se realizó la merma?');
@@ -17,7 +31,18 @@ function buildLimpieza(){
   buildZoneLim('zone-bano-oficina-lim', DB.limpiezaTareasBano, 'bano', saved, readOnly, 'limpiezaTareasBano');
   buildZoneCustomLim(saved, readOnly);
   if(saved._obs) document.getElementById('lim-obs-txt').value = saved._obs;
+  document.getElementById('lim-obs-txt').disabled = readOnly;
+  document.querySelectorAll('#sec-limpieza .btn-primary').forEach(b=>{
+    if(b.getAttribute('onclick')==="guardarLimpiezaDia()"){ b.disabled = bloqueadoHora; b.style.opacity = bloqueadoHora?'.5':''; }
+  });
   updateLimpieza();
+}
+
+// Se llama en cada check individual: actualiza la barra de progreso y
+// guarda en segundo plano para que nada se pierda si se sale de la página.
+function limChange(){
+  updateLimpieza();
+  if(!limpiezaBloqueadaPorHora()) guardarLimpiezaDia(true);
 }
 
 function addTareaLim(dbKey, inputId){
@@ -56,7 +81,7 @@ function buildZoneCustomLim(saved, readOnly){
   }
   zone.innerHTML = items.map((it,i)=>`
     <div class="chk-item">
-      <input type="checkbox" id="cus-${i}" ${it.done?'checked':''} ${readOnly?'disabled':''} onchange="updateLimpieza()">
+      <input type="checkbox" id="cus-${i}" ${it.done?'checked':''} ${readOnly?'disabled':''} onchange="limChange()">
       <label for="cus-${i}" style="flex:1;${it.done?'text-decoration:line-through;color:var(--text3)':''}">${it.texto}</label>
       ${readOnly?'':`<button class="btn btn-icon btn-sm btn-danger" onclick="delCustomLimTask(${i})"><i class="ti ti-trash"></i></button>`}
     </div>`).join('');
@@ -87,7 +112,7 @@ function buildZoneLim(zoneId, tareas, prefix, saved, readOnly, dbKey){
       const editBtns = (dbKey && !readOnly) ? `
         <button type="button" class="btn btn-icon btn-sm" onclick="editTareaLim('${dbKey}',${i})"><i class="ti ti-pencil"></i></button>
         <button type="button" class="btn btn-icon btn-sm btn-danger" onclick="delTareaLim('${dbKey}',${i})"><i class="ti ti-trash"></i></button>` : '';
-      return `<div class="chk-item"><input type="checkbox" id="${prefix}-${i}" ${done?'checked':''} ${readOnly?'disabled':''} onchange="updateLimpieza()"><label for="${prefix}-${i}" style="flex:1;${done?'text-decoration:line-through;color:var(--text3)':''}">${t}</label>${editBtns}</div>`;
+      return `<div class="chk-item"><input type="checkbox" id="${prefix}-${i}" ${done?'checked':''} ${readOnly?'disabled':''} onchange="limChange()"><label for="${prefix}-${i}" style="flex:1;${done?'text-decoration:line-through;color:var(--text3)':''}">${t}</label>${editBtns}</div>`;
     }).join('');
   }
   if(dbKey){
@@ -105,7 +130,7 @@ function buildTurnosLim(zoneId, turnos, prefix, saved, readOnly, label){
         const done = saved[`${prefix}_${i}`] || false;
         const c = colores[i];
         return `<label style="display:flex;align-items:center;gap:8px;background:${done?'var(--surface2)':'var(--bg)'};border:2px solid ${done?c:'var(--border)'};border-radius:10px;padding:10px 18px;min-width:140px">
-          <input type="checkbox" id="${prefix}-${i}" ${done?'checked':''} ${readOnly?'disabled':''} onchange="updateLimpieza()" style="accent-color:${c};width:17px;height:17px">
+          <input type="checkbox" id="${prefix}-${i}" ${done?'checked':''} ${readOnly?'disabled':''} onchange="limChange()" style="accent-color:${c};width:17px;height:17px">
           <div><div style="font-size:13px;font-weight:700;color:${done?c:'var(--text2)'}">${t}</div>
           ${done?`<div style="font-size:10px;color:${c}">✓ Realizado</div>`:'<div style="font-size:10px;color:var(--text3)">Pendiente</div>'}</div>
         </label>`;
@@ -126,7 +151,11 @@ function updateLimpieza(){
   bar.style.background = pct>=80 ? 'var(--green)' : pct>=50 ? 'var(--blue)' : 'var(--amber)';
 }
 
-function guardarLimpiezaDia(){
+function guardarLimpiezaDia(silencioso){
+  if(limpiezaBloqueadaPorHora()){
+    if(!silencioso) toast('El checklist de hoy ya está bloqueado (después de las 10:30pm).','warn');
+    return;
+  }
   const fecha = today();
   const key = `lim_${fecha}_dia`;
   const data = { _fecha:fecha, _usuario:currentUser, _guardado:new Date().toISOString() };
@@ -141,10 +170,11 @@ function guardarLimpiezaDia(){
   });
   data._obs = document.getElementById('lim-obs-txt').value;
   localStorage.setItem(key, JSON.stringify(data));
+  if(silencioso) return;
   cargarFechasHistorialLim();
   const msg = document.getElementById('lim-save-msg');
   msg.style.display='inline-flex'; setTimeout(()=>msg.style.display='none',2500);
-  toast('Checklist guardado','ok');
+  toast('Checklist guardado — el siguiente turno puede seguir marcando','ok');
 }
 
 function cargarFechasHistorialLim(){
