@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RetailManager — Mass</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <i class="ti ti-building-store icon"></i>
+      <h1>RetailManager</h1>
+      <p>Plataforma de gestión — Mass</p>
+    </div>
+  <div class="fgroup">
+  <label>Usuario</label>
+  <input type="text" id="login-user" placeholder="Código de tienda" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+</div>
+    <div class="fgroup">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-login" onclick="doLogin()"><i class="ti ti-login"></i> Ingresar</button>
+    <div class="login-error" id="login-error">Usuario o contraseña incorrectos.</div>
+    <p style="text-align:center;font-size:11px;color:#9AA0B0;margin-top:18px">Desarrollado por Alonso Ramos Barbarán</p>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app">
+  <div class="topbar">
+    <button class="btn-menu" onclick="toggleSidebar()" aria-label="Menú"><i class="ti ti-menu-2"></i></button>
+    <div class="logo"><i class="ti ti-building-store"></i> <span>RetailManager</span></div>
+    <span class="topbar-title" id="topbar-title">Dashboard</span>
+    <div class="user-badge"><i class="ti ti-user-circle"></i><span id="topbar-user"></span></div>
+    <button class="btn" id="btn-sync" style="display:none" onclick="forzarSincronizacion()" title="Sobrescribe la nube con los datos actuales de esta tienda, eliminando información vieja que ya no está en la plataforma"><i class="ti ti-refresh"></i> <span>Sincronizar</span></button>
+    <button class="btn-logout" onclick="doLogout()"><i class="ti ti-logout"></i> <span>Salir</span></button>
+  </div>
+
+  <div class="body">
+    <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+    <nav class="sidebar" id="main-sidebar">
+      <div class="nav-group">Principal</div>
+      <div class="nav-item active" data-section="dashboard"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+      <div class="nav-item" data-section="comunicados"><i class="ti ti-speakerphone"></i>Comunicados<span class="nav-badge" id="comunicados-badge" style="display:none">0</span></div>
+      <div class="nav-group">Operaciones</div>
+      <div class="nav-item" data-section="vencimientos"><i class="ti ti-calendar-x"></i>Vencimientos</div>
+      <div class="nav-item" data-section="incidencias"><i class="ti ti-alert-triangle"></i>Incidencias</div>
+      <div class="nav-item" data-section="limpieza"><i class="ti ti-sparkles"></i>Limpieza</div>
+      <div class="nav-item" data-section="auditorias"><i class="ti ti-clipboard-list"></i>Auditorías</div>
+      <div class="nav-item" data-section="caidas"><i class="ti ti-bolt-off"></i>Caídas de Servicio</div>
+      <div class="nav-item" data-section="certificados"><i class="ti ti-certificate"></i>Certificados</div>
+      <div class="nav-group">Personal</div>
+      <div class="nav-item" data-section="personal"><i class="ti ti-users"></i>Mi equipo</div>
+      <div class="nav-item" data-section="horarios"><i class="ti ti-calendar-week"></i>Horarios</div>
+      <div class="nav-item" data-section="evaluaciones"><i class="ti ti-clipboard-check"></i>Evaluaciones</div>
+    </nav>
+
+    <div class="content">
+      <!-- DASHBOARD -->
+      <div class="section active" id="sec-dashboard">
+        <div class="page-header">
+          <div><h2>Dashboard general</h2><p id="dash-date"></p></div>
+          <button class="btn btn-sm" onclick="refreshDash()"><i class="ti ti-refresh"></i> Actualizar</button>
+        </div>
+        <div class="grid-4">
+          <div class="metric"><div class="m-label"><i class="ti ti-users"></i>Personal activo</div><div class="m-val" id="d-personal" style="color:var(--blue)">—</div><div class="m-sub">bajo tu cargo</div></div>
+          <div class="metric"><div class="m-label"><i class="ti ti-calendar-x"></i>Vencimientos &lt;7d</div><div class="m-val" id="d-venc" style="color:var(--amber)">—</div><div class="m-sub">próximos 7 días</div></div>
+          <div class="metric"><div class="m-label"><i class="ti ti-alert-triangle"></i>Incidencias abiertas</div><div class="m-val" id="d-inc" style="color:var(--red)">—</div><div class="m-sub">sin resolver</div></div>
+          <div class="metric"><div class="m-label"><i class="ti ti-calendar-off"></i>Faltas este mes</div><div class="m-val" id="d-faltas" style="color:var(--purple)">—</div><div class="m-sub">en horarios</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><div class="card-title"><i class="ti ti-alert-circle"></i>Alertas activas</div></div>
+            <div id="dash-alerts"><p class="text-muted">Calculando alertas...</p></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title"><i class="ti ti-chart-bar"></i>Últimas incidencias</div></div>
+            <div id="dash-inc-list"><p class="text-muted">Sin datos aún.</p></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="ti ti-bolt-off" style="color:var(--amber)"></i>Caídas de luz y SIP recientes</div>
+            <button class="btn btn-sm" onclick="document.querySelector('.nav-item[data-section=\'caidas\']').click()"><i class="ti ti-arrow-right"></i> Ver todas</button>
+          </div>
+          <div id="dash-caidas-list"><p class="text-muted">Sin datos aún.</p></div>
+        </div>
+      </div>
+
+      <!-- COMUNICADOS -->
+      <div class="section" id="sec-comunicados">
+        <div class="page-header">
+          <div><h2><i class="ti ti-speakerphone"></i> Comunicados</h2><p>Mensajes e información enviados por la Jefatura de Zona a todas las tiendas</p></div>
+          <button class="btn btn-sm" onclick="renderComunicados()"><i class="ti ti-refresh"></i> Actualizar</button>
+        </div>
+        <div id="comunicados-list"><p class="text-muted">Cargando comunicados...</p></div>
+      </div>
+
+      <!-- VENCIMIENTOS -->
+      <div class="section" id="sec-vencimientos">
+        <div class="page-header">
+          <div><h2>Control de vencimientos</h2><p>Registra productos y el estado se actualiza automáticamente según la fecha</p></div>
+          <button class="btn btn-primary" onclick="openAddVenc()"><i class="ti ti-plus"></i> Agregar producto</button>
+        </div>
+        <div class="card">
+          <div class="tabs">
+            <div class="tab active" onclick="switchTab('venc-tabs',0)">Todos</div>
+            <div class="tab" onclick="switchTab('venc-tabs',1)">⚠ Críticos (&lt;3d)</div>
+            <div class="tab" onclick="switchTab('venc-tabs',2)">Próximos (&lt;7d)</div>
+            <div class="tab" onclick="switchTab('venc-tabs',3)">Vigentes</div>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Producto</th><th>Categoría (vida útil)</th><th>Sección</th><th>Lote</th><th>Uds.</th><th>Precio unit.</th><th>Total S/</th><th>Fecha (FV/Lote)</th><th>Fecha de retiro</th><th>Estado</th><th style="width:80px">Acciones</th></tr></thead>
+              <tbody id="venc-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- CERTIFICADOS -->
+      <div class="section" id="sec-certificados">
+        <div class="page-header">
+          <div><h2>Certificados</h2><p>Registra certificados de la tienda con su fecha de entrega y vencimiento</p></div>
+          <button class="btn btn-primary" onclick="openAddCert()"><i class="ti ti-plus"></i> Agregar certificado</button>
+        </div>
+        <div class="card">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Certificado</th><th>Fecha de entrega</th><th>Fecha de vencimiento</th><th>Estado</th><th style="width:80px">Acciones</th></tr></thead>
+              <tbody id="cert-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- INCIDENCIAS -->
+      <div class="section" id="sec-incidencias">
+        <div class="page-header">
+          <div><h2>Incidencias de recepción</h2><p>Registra y gestiona problemas detectados al recibir mercadería</p></div>
+          <button class="btn btn-primary" onclick="openNewInc()"><i class="ti ti-plus"></i> Nueva incidencia</button>
+        </div>
+        <div class="card">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Fecha</th><th>Proveedor</th><th>Producto</th><th>Tipo</th><th>Uds.</th><th>Monto S/</th><th>Costo Total</th><th>Responsable</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody id="inc-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- LIMPIEZA -->
+      <div class="section" id="sec-limpieza">
+        <div class="page-header">
+          <div><h2><i class="ti ti-sparkles" style="color:var(--blue)"></i> Checklist de Limpieza</h2><p>Control diario por turno — se reinicia cada día automáticamente</p></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="lim-fecha-hist" onchange="cargarLimpiezaHistorial()" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;color:var(--text2)">
+              <option value="">📅 Ver día anterior...</option>
+            </select>
+          </div>
+        </div>
+        <div class="card" style="padding:.75rem 1.25rem;margin-bottom:1rem">
+          <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:6px">
+              <i class="ti ti-calendar" style="color:var(--blue)"></i>
+              <strong id="lim-fecha-hoy" style="font-size:13px"></strong>
+            </div>
+            <div id="lim-prog-badge" style="margin-left:auto;background:var(--blue-light);color:var(--blue);border-radius:20px;padding:4px 14px;font-size:12px;font-weight:700">0 / 0 tareas</div>
+          </div>
+          <div class="prog-bar" style="margin-top:.6rem"><div class="prog-fill" id="lim-prog-bar" style="width:0%"></div></div>
+        </div>
+        <div id="lim-bloqueo-banner" style="display:none;margin-bottom:1rem">
+          <div class="alert alert-warn"><i class="ti ti-lock"></i> El checklist de hoy ya fue <strong>guardado y cerrado</strong>. Mañana se abrirá uno nuevo en blanco.</div>
+        </div>
+        <div id="lim-historial-banner" style="display:none;margin-bottom:1rem">
+          <div class="alert alert-info"><i class="ti ti-eye"></i> Viendo historial del <strong id="lim-hist-fecha-label"></strong> — Turno <strong id="lim-hist-turno-label"></strong>. <a href="#" onclick="cerrarHistorialLim();return false" style="color:var(--blue);font-weight:600">Volver al día de hoy</a> · <a href="#" onclick="borrarHistorialLimActual();return false" style="color:var(--red);font-weight:600"><i class="ti ti-trash"></i> Borrar este historial</a></div>
+        </div>
+        <div class="card"><div class="card-title" style="margin-bottom:.75rem"><i class="ti ti-list-check" style="color:var(--blue)"></i> Tareas Generales del Turno</div><div id="zone-general-lim"></div>
+          <div id="gen-lim-add-row" style="display:flex;gap:8px;margin-top:.75rem">
+            <input type="text" id="gen-lim-input" placeholder="Nueva tarea general..." style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px" onkeydown="if(event.key==='Enter')addTareaLim('limpiezaTareasGenerales','gen-lim-input')">
+            <button class="btn btn-sm btn-primary" onclick="addTareaLim('limpiezaTareasGenerales','gen-lim-input')"><i class="ti ti-plus"></i> Agregar</button>
+          </div>
+        </div>
+        <div class="card" id="bloque-merma"><div class="card-title" style="margin-bottom:.75rem"><i class="ti ti-trash" style="color:var(--amber)"></i> Merma <span style="font-size:11px;color:var(--text3);font-weight:400">(confirmar si se realizó en turno mañana y tarde)</span></div><div id="zone-merma-lim"></div></div>
+        <div class="card"><div class="card-title" style="margin-bottom:.75rem"><i class="ti ti-leaf" style="color:var(--green)"></i> Saneo de Frutas <span style="font-size:11px;color:var(--text3);font-weight:400">(confirmar si se realizó en cada turno)</span></div><div id="zone-frutas-lim"></div></div>
+        <div class="card"><div class="card-title" style="margin-bottom:.75rem"><i class="ti ti-clipboard-check" style="color:var(--purple)"></i> Checklist Diario <span style="font-size:11px;color:var(--text3);font-weight:400">(marcar el turno en que se realizó)</span></div><div id="zone-checklist-lim"></div></div>
+        <div class="card"><div class="card-title" style="margin-bottom:.75rem"><i class="ti ti-home-check" style="color:var(--red)"></i> Limpieza de Baño y Oficina <span style="font-size:11px;color:var(--text3);font-weight:400">(3 colaboradores/día según horario)</span></div><div id="zone-bano-oficina-lim"></div>
+          <div id="bano-lim-add-row" style="display:flex;gap:8px;margin-top:.75rem">
+            <input type="text" id="bano-lim-input" placeholder="Nueva tarea de baño/oficina..." style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px" onkeydown="if(event.key==='Enter')addTareaLim('limpiezaTareasBano','bano-lim-input')">
+            <button class="btn btn-sm btn-primary" onclick="addTareaLim('limpiezaTareasBano','bano-lim-input')"><i class="ti ti-plus"></i> Agregar</button>
+          </div>
+        </div>
+        <div class="card" id="bloque-custom-lim">
+          <div class="card-title" style="margin-bottom:.75rem"><i class="ti ti-playlist-add" style="color:var(--blue)"></i> Tareas Personalizadas <span style="font-size:11px;color:var(--text3);font-weight:400">(agrega pendientes extra del día)</span></div>
+          <div id="zone-custom-lim"></div>
+          <div id="custom-lim-add-row" style="display:flex;gap:8px;margin-top:.75rem">
+            <input type="text" id="custom-lim-input" placeholder="Ej: Reacomodar exhibidor de la entrada..." style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px" onkeydown="if(event.key==='Enter')addCustomLimTask()">
+            <button class="btn btn-sm btn-primary" onclick="addCustomLimTask()"><i class="ti ti-plus"></i> Agregar tarea</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:.75rem"><i class="ti ti-notes" style="color:var(--text2)"></i> Observaciones del turno</div>
+          <textarea id="lim-obs-txt" rows="3" placeholder="Agrega notas u observaciones del turno..." style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;resize:vertical"></textarea>
+          <div style="margin-top:.75rem;display:flex;gap:8px;align-items:center">
+            <button class="btn btn-primary" id="btn-guardar-lim" onclick="guardarLimpiezaDia()"><i class="ti ti-device-floppy"></i> Guardar y cerrar el día</button>
+            <span id="lim-save-msg" style="font-size:12px;color:var(--green);display:none"><i class="ti ti-check"></i> Guardado correctamente</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AUDITORÍAS -->
+      <div class="section" id="sec-auditorias">
+        <div class="page-header">
+          <div><h2><i class="ti ti-clipboard-list" style="color:var(--purple)"></i> Auditorías de Tienda</h2><p>Checklist dinámico + historial de auditorías y fallos</p></div>
+        </div>
+        <div class="tabs" style="margin-bottom:1.25rem">
+          <div class="tab active" onclick="switchMainAudTab(0)" id="main-aud-tab-0">📝 Checklist Actual</div>
+          <div class="tab" onclick="switchMainAudTab(1)" id="main-aud-tab-1">📚 Historial de Auditorías</div>
+          <div class="tab" onclick="switchMainAudTab(2)" id="main-aud-tab-2">⚠️ Fallos Encontrados</div>
+        </div>
+        <div id="main-aud-panel-0">
+          <div class="audit-summary">
+            <div class="score-box final">
+              <span class="score-value" id="finalScore">0.00%</span>
+              <span class="score-label">Promedio General</span>
+            </div>
+            <div class="score-box" id="statusBox" style="background:var(--text2);color:#fff">
+              <span class="score-value" id="finalStatus">SIN EVALUAR</span>
+              <span class="score-label">Estado Final</span>
+            </div>
+            <div style="flex:1;min-width:300px;max-width:400px">
+              <canvas id="auditChart" height="120"></canvas>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button class="btn btn-primary" onclick="saveAuditChecklist()"><i class="ti ti-device-floppy"></i> Guardar Auditoría</button>
+              <button class="btn" onclick="resetAuditChecklist()"><i class="ti ti-refresh"></i> Reiniciar</button>
+            </div>
+          </div>
+          <div id="auditChecklistContainer"></div>
+        </div>
+        <div id="main-aud-panel-1" style="display:none">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="ti ti-history" style="color:var(--purple)"></i>Auditorías guardadas</div>
+              <div style="display:flex;gap:8px">
+                <select id="hist-filter-estado" onchange="renderAuditHistory()" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius-sm)">
+                  <option value="">Todos los estados</option>
+                  <option>APROBADO</option>
+                  <option>BUENO</option>
+                  <option>JALADO</option>
+                </select>
+              </div>
+            </div>
+            <div id="audit-history-list"></div>
+          </div>
+        </div>
+        <div id="main-aud-panel-2" style="display:none">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="ti ti-alert-circle" style="color:var(--red)"></i>Fallos detectados</div>
+              <div style="display:flex;gap:8px">
+                <select id="aud-filter-estado-fallo" onchange="renderFallos()" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius-sm)">
+                  <option value="">Todos los estados</option>
+                  <option>Pendiente</option>
+                  <option>En proceso</option>
+                  <option>Subsanado</option>
+                </select>
+                <select id="aud-filter-origen" onchange="renderFallos()" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius-sm)">
+                  <option value="">Todos los orígenes</option>
+                  <option value="checklist">De checklist</option>
+                  <option value="manual">Manual</option>
+                  <option value="historico">Histórico</option>
+                </select>
+                <select id="aud-filter-fecha-fallo" onchange="renderFallos()" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius-sm)">
+                  <option value="">Todas las fechas</option>
+                </select>
+                <button class="btn btn-sm" onclick="openModal('m-fallo')"><i class="ti ti-plus"></i> Agregar fallo</button>
+              </div>
+            </div>
+            <div class="tbl-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Fecha</th><th>Categoría</th><th>Descripción del fallo</th><th>Pts</th><th>Origen</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody id="aud-fallos-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CAÍDAS DE SERVICIO -->
+      <div class="section" id="sec-caidas">
+        <div class="page-header">
+          <div><h2><i class="ti ti-bolt-off" style="color:var(--amber)"></i> Caídas de Servicio</h2><p>Registra cortes de luz y caídas del método de pago SIP con hora exacta, para sustentar ventas o participación SIP bajas ese día</p></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm" onclick="openNewCaida('Luz')"><i class="ti ti-bolt-off"></i> Caída de luz</button>
+            <button class="btn btn-primary btn-sm" onclick="openNewCaida('SIP')"><i class="ti ti-credit-card-off"></i> Caída de SIP</button>
+          </div>
+        </div>
+        <div id="caidas-resumen" style="margin-bottom:1rem"></div>
+        <div class="card">
+          <div class="tabs">
+            <div class="tab active" onclick="switchCaidaTab('Todos',this)">Todos</div>
+            <div class="tab" onclick="switchCaidaTab('Luz',this)">⚡ Luz</div>
+            <div class="tab" onclick="switchCaidaTab('SIP',this)">💳 SIP</div>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Fecha</th><th>Tipo</th><th>Hora inicio</th><th>Hora fin</th><th>Duración</th><th>Motivo</th><th>Responsables</th><th style="width:80px">Acciones</th></tr></thead>
+              <tbody id="caidas-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PERSONAL -->
+      <div class="section" id="sec-personal">
+        <div class="page-header">
+          <div><h2>Mi equipo</h2><p>Datos de los colaboradores a tu cargo</p></div>
+          <button class="btn btn-primary" onclick="openAddPers()"><i class="ti ti-user-plus"></i> Agregar colaborador</button>
+        </div>
+        <div id="personal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem"></div>
+      </div>
+
+      <!-- HORARIOS -->
+      <div class="section" id="sec-horarios">
+        <div class="page-header">
+          <div><h2>Horarios semanales</h2><p>Gestiona turnos y registra faltas y tardanzas directamente en el cuadro</p></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-sm" onclick="shiftHorWeek(-1)"><i class="ti ti-chevron-left"></i></button>
+            <input type="date" id="hor-week" onchange="renderHorario()" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px">
+            <button class="btn btn-sm" onclick="shiftHorWeek(1)"><i class="ti ti-chevron-right"></i></button>
+            <button class="btn btn-sm btn-primary" onclick="renderHorario()"><i class="ti ti-search"></i> Ver semana</button>
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:.75rem;flex-wrap:wrap">
+            <div class="card-title" style="margin:0"><i class="ti ti-calendar-week"></i>Cuadro de turnos</div>
+            <div style="margin-left:auto;display:flex;gap:6px;font-size:11px;flex-wrap:wrap">
+              <span style="background:var(--surface2);padding:2px 8px;border-radius:20px">H = Horario</span>
+              <span style="background:#fef3e2;padding:2px 8px;border-radius:20px;color:#c47a10">F = Falta</span>
+              <span style="background:#f0eafa;padding:2px 8px;border-radius:20px;color:#6a3dbb">T = Tardanza</span>
+              <span style="background:#e4f5ee;padding:2px 8px;border-radius:20px;color:#1a9e5f">V = Vacaciones</span>
+              <span style="background:var(--surface2);padding:2px 8px;border-radius:20px;color:var(--text3)">D = Descanso</span>
+            </div>
+          </div>
+          <div class="tbl-wrap"><div id="hor-container"></div></div>
+          <div style="margin-top:.75rem;display:flex;gap:8px">
+            <button class="btn btn-primary btn-sm" onclick="saveHorario()"><i class="ti ti-device-floppy"></i> Guardar ahora</button>
+            <button class="btn btn-sm" onclick="resetHorarioSemana()"><i class="ti ti-refresh"></i> Restablecer según puesto</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EVALUACIONES -->
+      <div class="section" id="sec-evaluaciones">
+        <div class="page-header">
+          <div><h2>Evaluaciones orales</h2><p>Exámenes quincenales de actitudes y valores de la empresa</p></div>
+          <button class="btn btn-primary" onclick="openModal('m-eval');document.getElementById('eval-periodo').value=today()"><i class="ti ti-plus"></i> Nueva evaluación</button>
+        </div>
+        <div class="card">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Colaborador</th><th>Fecha</th><th>Período</th><th>Puntaje</th><th>Nivel</th><th>Observaciones</th><th>Evaluador</th><th>Acciones</th></tr></thead>
+              <tbody id="eval-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:16px 10px;font-size:13px;font-weight:600;color:var(--text2);border-top:1px solid var(--border);margin-top:10px;letter-spacing:.3px">
+    <i class="ti ti-building-store" style="color:var(--blue);margin-right:4px"></i>RetailManager · Mass <span style="color:var(--text3);font-weight:400">— Desarrollado por</span> <span style="color:var(--blue)">Alonso Ramos Barbarán</span>
+  </div>
+</div>
+
+<!-- ═══ MODALES ═══ -->
+<div class="modal-bg" id="m-audit-detail">
+  <div class="modal" style="width:800px;max-width:96vw">
+    <h3><i class="ti ti-clipboard-list" style="color:var(--purple)"></i>Detalle de Auditoría</h3>
+    <div id="audit-detail-content"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-audit-detail')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="m-fallo">
+  <div class="modal">
+    <h3><i class="ti ti-alert-circle" style="color:var(--red)"></i>Registrar Fallo</h3>
+    <input type="hidden" id="fallo-edit-id">
+    <div class="frow">
+      <div class="fgroup"><label>Categoría *</label><select id="fallo-categoria">
+        <option>DINERO</option><option>CLIENTE</option><option>GDH</option><option>INVENTARIOS</option>
+        <option>CALIDAD</option><option>SST</option><option>MANTENIMIENTO</option><option>REGULATORIA</option><option>General</option>
+      </select></div>
+      <div class="fgroup"><label>Fecha *</label><input type="date" id="fallo-fecha"></div>
+    </div>
+    <div class="fgroup"><label>Descripción *</label><textarea id="fallo-desc" placeholder="Describe el fallo..."></textarea></div>
+    <div class="frow">
+      <div class="fgroup"><label>Puntos afectados</label><input type="number" id="fallo-puntos" placeholder="Ej: 5" min="0"></div>
+      <div class="fgroup"><label>Fecha límite</label><input type="date" id="fallo-limite"></div>
+    </div>
+    <div class="frow">
+      <div class="fgroup"><label>Estado</label><select id="fallo-estado"><option>Pendiente</option><option>En proceso</option><option>Subsanado</option></select></div>
+      <div class="fgroup"><label>Observación de solución</label><input type="text" id="fallo-obs-solucion" placeholder="¿Cómo se subsanó?"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-fallo')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveFallo()"><i class="ti ti-device-floppy"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="m-venc">
+  <div class="modal">
+    <h3><i class="ti ti-calendar-x" style="color:var(--amber)"></i><span id="m-venc-title">Agregar producto</span></h3>
+    <input type="hidden" id="venc-edit-id">
+    <div class="frow"><div class="fgroup"><label>Nombre *</label><input type="text" id="venc-nombre"></div>
+    <div class="fgroup"><label>Sección *</label><select id="venc-seccion"><option>Lácteos</option><option>Panadería</option><option>Abarrotes</option><option>Conservas</option><option>Bebidas</option><option>Limpieza</option><option>Carnes</option><option>Fiambres</option><option>Frutas</option></select></div></div>
+    <div class="fgroup"><label>Categoría (vida útil) *</label><select id="venc-categoria" onchange="vencCategoriaChange()"></select></div>
+    <div class="frow"><div class="fgroup"><label>Lote</label><input type="text" id="venc-lote"></div>
+    <div class="fgroup"><label id="venc-fecha-label">Fecha *</label><input type="date" id="venc-fecha" onchange="vencCategoriaChange()"></div></div>
+    <div id="venc-retiro-preview" style="font-size:12px;color:var(--amber);margin:-6px 0 10px;font-weight:600"></div>
+    <div class="frow"><div class="fgroup"><label>Uds. *</label><input type="number" id="venc-uds" min="0"></div>
+    <div class="fgroup"><label>Precio S/ *</label><input type="number" id="venc-precio" step="0.01" min="0"></div></div>
+    <div class="fgroup"><label>Responsable</label><textarea id="venc-obs"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-venc')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveVenc()"><i class="ti ti-device-floppy"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="m-inc">
+  <div class="modal">
+    <h3><i class="ti ti-alert-triangle" style="color:var(--amber)"></i><span id="m-inc-title">Nueva incidencia</span></h3>
+    <input type="hidden" id="inc-edit-id">
+    <div class="frow"><div class="fgroup"><label>Proveedor *</label><input type="text" id="inc-proveedor"></div>
+    <div class="fgroup"><label>Fecha *</label><input type="date" id="inc-fecha"></div></div>
+    <div class="frow"><div class="fgroup"><label>Tipo *</label><select id="inc-tipo" onchange="toggleIncTipo()"><option>Faltante</option><option>Sobrante</option><option>Cruce de códigos</option></select></div>
+    <div class="fgroup"><label>Responsable</label><select id="inc-resp"></select></div></div>
+    <div class="frow"><div class="fgroup"><label>Producto *</label><input type="text" id="inc-producto"></div>
+    <div class="fgroup"><label>Código *</label><input type="text" id="inc-codigo"></div></div>
+    <div class="frow" id="inc-otro-wrap" style="display:none">
+      <div class="fgroup"><label>Otro producto *</label><input type="text" id="inc-otro-producto"></div>
+      <div class="fgroup"><label>Otro código *</label><input type="text" id="inc-otro-codigo"></div>
+    </div>
+    <div class="frow"><div class="fgroup"><label>Uds.</label><input type="number" id="inc-uds" min="0"></div>
+    <div class="fgroup"><label>Monto S/</label><input type="number" id="inc-monto" step="0.01" min="0"></div></div>
+    <div class="fgroup"><label>Estado</label><select id="inc-estado" onchange="toggleIncEstado()"><option>Pendiente</option><option>Ajustado en inventario</option><option>Regularizado</option></select></div>
+    <div class="fgroup" id="inc-fecha-ajuste-wrap" style="display:none"><label>Fecha de ajuste</label><input type="date" id="inc-fecha-ajuste"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-inc')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveInc()"><i class="ti ti-device-floppy"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="m-pers">
+  <div class="modal">
+    <h3><i class="ti ti-user-plus" style="color:var(--blue)"></i><span id="m-pers-title">Agregar colaborador</span></h3>
+    <input type="hidden" id="pers-edit-id">
+    <div class="frow"><div class="fgroup"><label>Nombres *</label><input type="text" id="pers-nombre"></div>
+    <div class="fgroup"><label>DNI *</label><input type="text" id="pers-dni" maxlength="8"></div></div>
+    <div class="frow"><div class="fgroup"><label>Cargo *</label><select id="pers-cargo"><option>ADMINISTRADOR</option><option>ENCARGAD@</option><option>PARTIME 1</option><option>PARTIME 2</option><option>PARTIME 3</option><option>PARTIME 4</option><option>PARTIME 5</option><option>PARTIME 6</option></select></div>
+    <div class="fgroup"><label>Celular</label><input type="text" id="pers-cel"></div></div>
+    <div class="frow"><div class="fgroup"><label>Ingreso</label><input type="date" id="pers-ingreso"></div>
+    <div class="fgroup"><label>Turno</label><select id="pers-turno"><option value="M">Mañana</option><option value="T">Tarde</option><option value="R">Rotativo</option></select></div></div>
+    <div class="fgroup"><label>Estado</label><select id="pers-estado" onchange="toggleVacFechas()"><option>Activo</option><option>Vacaciones</option><option>Inactivo</option></select></div>
+    <div class="frow" id="pers-vac-row" style="display:none">
+      <div class="fgroup"><label>Vacaciones desde</label><input type="date" id="pers-vac-desde"></div>
+      <div class="fgroup"><label>Vacaciones hasta</label><input type="date" id="pers-vac-hasta"></div>
+    </div>
+    <div class="fgroup" style="margin-top:6px">
+      <label style="margin-bottom:6px;display:block">Documentación</label>
+      <div id="pers-docs-check" style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-pers')">Cancelar</button>
+      <button class="btn btn-primary" onclick="savePers()"><i class="ti ti-device-floppy"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="m-cert">
+  <div class="modal">
+    <h3><i class="ti ti-certificate" style="color:var(--amber)"></i><span id="m-cert-title">Agregar certificado</span></h3>
+    <input type="hidden" id="cert-edit-id">
+    <div class="fgroup"><label>Nombre del certificado *</label><input type="text" id="cert-nombre" placeholder="Ej: Certificado de fumigación"></div>
+    <div class="frow">
+      <div class="fgroup"><label>Fecha de entrega *</label><input type="date" id="cert-entrega"></div>
+      <div class="fgroup"><label>Fecha de vencimiento *</label><input type="date" id="cert-vencimiento"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-cert')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCert()"><i class="ti ti-device-floppy"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+<div class="modal-bg" id="m-tardanza">
+  <div class="modal">
+    <h3><i class="ti ti-clock" style="color:var(--purple)"></i>Registrar tardanza</h3>
+    <div class="frow">
+      <div class="fgroup"><label>Horas *</label><input type="number" id="tard-horas" min="0" max="8" placeholder="0" style="width:100%"></div>
+      <div class="fgroup"><label>Minutos *</label><input type="number" id="tard-minutos" min="0" max="59" placeholder="0" style="width:100%"></div>
+    </div>
+    <div class="fgroup"><label>Motivo</label><textarea id="tard-motivo" placeholder="Descripción breve (opcional)"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="document.getElementById('m-tardanza').classList.remove('open');_tardanzaPending=null;renderHorario()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveTardanza()"><i class="ti ti-device-floppy"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="m-eval">
+  <div class="modal" style="width:560px">
+    <h3><i class="ti ti-clipboard-check" style="color:var(--blue)"></i>Registrar evaluación oral</h3>
+    <div class="frow"><div class="fgroup"><label>Colaborador *</label><select id="eval-colab"></select></div>
+    <div class="fgroup"><label>Fecha de evaluación *</label><input type="date" id="eval-periodo"></div></div>
+    <div id="eval-preguntas"></div>
+    <div style="background:var(--blue-light);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-weight:600;font-size:13px">Puntaje total</span>
+      <span style="font-size:20px;font-weight:700;color:var(--blue)" id="eval-total">0 / 20</span>
+    </div>
+    <div class="fgroup"><label>Observaciones</label><textarea id="eval-obs"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-eval')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEval()"><i class="ti ti-device-floppy"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="m-caida">
+  <div class="modal">
+    <h3><i class="ti ti-bolt-off" style="color:var(--amber)"></i><span id="m-caida-title">Registrar caída de servicio</span></h3>
+    <input type="hidden" id="caida-edit-id">
+    <div class="frow">
+      <div class="fgroup"><label>Tipo *</label><select id="caida-tipo"><option value="Luz">⚡ Caída de luz</option><option value="SIP">💳 Caída de SIP</option></select></div>
+      <div class="fgroup"><label>Fecha *</label><input type="date" id="caida-fecha"></div>
+    </div>
+    <div class="frow">
+      <div class="fgroup"><label>Hora inicio *</label><input type="time" id="caida-hora-inicio"></div>
+      <div class="fgroup"><label>Hora fin *</label><input type="time" id="caida-hora-fin"></div>
+    </div>
+    <div class="fgroup"><label>Motivo</label><input type="text" id="caida-motivo" placeholder="Ej: Corte programado Hidrandina, falla de red SIP..."></div>
+    <div class="fgroup"><label>Responsables</label><textarea id="caida-obs" placeholder="Personal responsable durante la caída..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('m-caida')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCaida()"><i class="ti ti-device-floppy"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-img-bg" id="m-comunicado-img" onclick="this.classList.remove('open')">
+  <img id="m-comunicado-img-src" src="">
+</div>
+
+<!-- ═══ SCRIPTS (orden importa) ═══ -->
+<script src="js/utils.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/comunicados.js"></script>
+<script src="js/vencimientos.js"></script>
+<script src="js/incidencias.js"></script>
+<script src="js/personal.js"></script>
+<script src="js/horarios.js"></script>
+<script src="js/evaluaciones.js"></script>
+<script src="js/limpieza.js"></script>
+<script src="js/auditorias.js"></script>
+<script src="js/caidas.js"></script>
+<script src="js/certificados.js"></script>
+<script src="js/app.js"></script>
+<script type="module" src="js/firebase.js"></script>
+
+</body>
+</html>
