@@ -354,6 +354,10 @@
         <div class="card">
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:.75rem;flex-wrap:wrap">
             <div class="card-title" style="margin:0"><i class="ti ti-calendar-week"></i>Cuadro de turnos</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px">
+              <label style="color:var(--text2);font-weight:600">Plantilla:</label>
+              <select id="hor-plantilla-select" onchange="cambiarPlantillaHorario(this.value)" style="padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;max-width:280px"></select>
+            </div>
             <div style="margin-left:auto;display:flex;gap:6px;font-size:11px;flex-wrap:wrap">
               <span style="background:var(--surface2);padding:2px 8px;border-radius:20px">H = Horario</span>
               <span style="background:#fef3e2;padding:2px 8px;border-radius:20px;color:#c47a10">F = Falta</span>
@@ -483,7 +487,7 @@
     <input type="hidden" id="pers-edit-id">
     <div class="frow"><div class="fgroup"><label>Nombres *</label><input type="text" id="pers-nombre"></div>
     <div class="fgroup"><label>DNI *</label><input type="text" id="pers-dni" maxlength="8"></div></div>
-    <div class="frow"><div class="fgroup"><label>Cargo *</label><select id="pers-cargo"><option>ADMINISTRADOR</option><option>ENCARGAD@</option><option>PARTIME 1</option><option>PARTIME 2</option><option>PARTIME 3</option><option>PARTIME 4</option><option>PARTIME 5</option><option>PARTIME 6</option></select></div>
+    <div class="frow"><div class="fgroup"><label>Cargo *</label><select id="pers-cargo"></select></div>
     <div class="fgroup"><label>Celular</label><input type="text" id="pers-cel"></div></div>
     <div class="frow"><div class="fgroup"><label>Ingreso</label><input type="date" id="pers-ingreso"></div>
     <div class="fgroup"><label>Turno</label><select id="pers-turno"><option value="M">Mañana</option><option value="T">Tarde</option><option value="R">Rotativo</option></select></div></div>
