@@ -2,7 +2,7 @@
 // Guarda en caché el "esqueleto" de la app (HTML, CSS, JS) para que abra
 // rápido y funcione aunque la conexión sea mala. Los datos siguen viniendo
 // siempre de Firebase — esto NO guarda datos, solo archivos de la app.
-const CACHE_NAME = 'retailmanager-v5';
+const CACHE_NAME = 'retailmanager-v8';
 const ARCHIVOS_CACHE = [
   './',
   './index.html',

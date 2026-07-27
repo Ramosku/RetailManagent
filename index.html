@@ -366,6 +366,7 @@
               <span style="background:var(--surface2);padding:2px 8px;border-radius:20px;color:var(--text3)">D = Descanso</span>
             </div>
           </div>
+          <div id="hor-asignacion" style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px;margin-bottom:1rem"></div>
           <div class="tbl-wrap"><div id="hor-container"></div></div>
           <div style="margin-top:.75rem;display:flex;gap:8px">
             <button class="btn btn-primary btn-sm" onclick="saveHorario()"><i class="ti ti-device-floppy"></i> Guardar ahora</button>
@@ -487,7 +488,7 @@
     <input type="hidden" id="pers-edit-id">
     <div class="frow"><div class="fgroup"><label>Nombres *</label><input type="text" id="pers-nombre"></div>
     <div class="fgroup"><label>DNI *</label><input type="text" id="pers-dni" maxlength="8"></div></div>
-    <div class="frow"><div class="fgroup"><label>Cargo *</label><select id="pers-cargo"></select></div>
+    <div class="frow"><div class="fgroup"><label>Cargo / puesto <span style="font-weight:400;color:var(--text3)">(descriptivo)</span></label><input type="text" id="pers-cargo" placeholder="Ej: Cajero, Reponedor..."></div>
     <div class="fgroup"><label>Celular</label><input type="text" id="pers-cel"></div></div>
     <div class="frow"><div class="fgroup"><label>Ingreso</label><input type="date" id="pers-ingreso"></div>
     <div class="fgroup"><label>Turno</label><select id="pers-turno"><option value="M">Mañana</option><option value="T">Tarde</option><option value="R">Rotativo</option></select></div></div>
