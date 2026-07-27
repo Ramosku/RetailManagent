@@ -15,6 +15,7 @@ function loadDB(){
     evaluaciones: [],
     horarios: {},
     horarioPlantilla: 'p1_capo4',
+    horarioAsignaciones: {},
     limpiezaCustomTasks: [],
     limpiezaTareasGenerales: [...LIM_TAREAS_GENERALES_DEFAULT],
     limpiezaTareasBano: [...LIM_BANO_OFICINA_DEFAULT],
@@ -58,6 +59,17 @@ function migrateDB(parsed){
   if(!parsed.evaluaciones) parsed.evaluaciones = [];
   if(!parsed.horarios) parsed.horarios = {};
   if(!parsed.horarioPlantilla) parsed.horarioPlantilla = 'p1_capo4';
+  if(!parsed.horarioAsignaciones) parsed.horarioAsignaciones = {};
+  // Migración de una sola vez: el personal que ya tenía un "cargo" asignado
+  // (de antes de que Horarios manejara la asignación) se ubica solo en su
+  // mismo puesto dentro de la Plantilla 1, para no perder su horario.
+  if(!parsed.horarioAsignaciones.p1_capo4 && parsed.personal && parsed.personal.length){
+    const asign = {};
+    parsed.personal.forEach(p=>{
+      if(p.cargo && asign[p.cargo]===undefined) asign[p.cargo] = p.id;
+    });
+    parsed.horarioAsignaciones.p1_capo4 = asign;
+  }
   if(!parsed.caidas) parsed.caidas = [];
   if(!parsed.certificados) parsed.certificados = [];
   if(!parsed.nextId) parsed.nextId = {venc:1, inc:1, eval:1, pers:1, aud:1, fallo:1, caida:1, cert:1};

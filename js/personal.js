@@ -59,8 +59,7 @@ function renderPersonal(){
 function openAddPers(){
   document.getElementById('m-pers-title').textContent='Agregar colaborador';
   document.getElementById('pers-edit-id').value='';
-  ['pers-nombre','pers-dni','pers-cel','pers-ingreso','pers-vac-desde','pers-vac-hasta'].forEach(id=>document.getElementById(id).value='');
-  poblarCargoOptions();
+  ['pers-nombre','pers-dni','pers-cargo','pers-cel','pers-ingreso','pers-vac-desde','pers-vac-hasta'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('pers-turno').value='M';
   document.getElementById('pers-estado').value='Activo';
   toggleVacFechas();
@@ -74,7 +73,6 @@ function editPers(id){
   document.getElementById('pers-edit-id').value=id;
   document.getElementById('pers-nombre').value=p.nombre;
   document.getElementById('pers-dni').value=p.dni;
-  poblarCargoOptions(p.cargo);
   document.getElementById('pers-cargo').value=p.cargo;
   document.getElementById('pers-cel').value=p.cel||'';
   document.getElementById('pers-ingreso').value=p.ingreso||'';

@@ -4,6 +4,19 @@ const DAYKEYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 // Cada tienda elige cuál de estas plantillas usar (según su dotación).
 // El horario que ves por defecto en la grilla sale de la plantilla elegida;
 // cualquier celda siempre se puede corregir manualmente después.
+// Nombres de cargo anteriores a esta actualización — se conservan en TODAS
+// las plantillas para que el personal ya registrado nunca se quede sin
+// horario por defecto, sin importar qué plantilla elija la tienda.
+const CARGOS_LEGACY = {
+  'ENCARGAD@': {Mon:{in:'13:15',out:'22:15'}, Tue:{in:'06:45',out:'15:45'}, Wed:{in:'12:00',out:'21:00'}, Thu:{in:'06:45',out:'15:45'}, Fri:'D', Sat:{in:'12:00',out:'21:00'}, Sun:{in:'06:45',out:'15:45'}},
+  'PARTIME 1': {Mon:{in:'08:15',out:'13:00'}, Tue:{in:'08:15',out:'13:00'}, Wed:{in:'08:15',out:'13:00'}, Thu:{in:'08:15',out:'13:00'}, Fri:'D', Sat:'D', Sun:{in:'08:15',out:'13:00'}},
+  'PARTIME 2': {Mon:{in:'15:30',out:'20:15'}, Tue:{in:'15:30',out:'20:15'}, Wed:'D', Thu:'D', Fri:{in:'15:30',out:'20:15'}, Sat:{in:'15:30',out:'20:15'}, Sun:{in:'15:30',out:'20:15'}},
+  'PARTIME 3': {Mon:{in:'17:30',out:'22:15'}, Tue:'D', Wed:'D', Thu:{in:'17:15',out:'22:00'}, Fri:{in:'17:30',out:'22:15'}, Sat:{in:'17:30',out:'22:15'}, Sun:{in:'17:30',out:'22:15'}},
+  'PARTIME 4': {Mon:'D', Tue:{in:'17:30',out:'22:15'}, Wed:{in:'17:30',out:'22:15'}, Thu:{in:'15:45',out:'20:30'}, Fri:'D', Sat:{in:'17:30',out:'22:15'}, Sun:{in:'17:15',out:'22:00'}},
+  'PARTIME 5': {Mon:{in:'06:45',out:'11:30'}, Tue:'D', Wed:{in:'07:00',out:'11:45'}, Thu:'D', Fri:{in:'08:15',out:'13:00'}, Sat:{in:'07:00',out:'11:45'}, Sun:{in:'07:00',out:'11:45'}},
+  'PARTIME 6': {Mon:'D', Tue:{in:'17:30',out:'22:15'}, Wed:{in:'17:30',out:'22:15'}, Thu:{in:'17:30',out:'22:15'}, Fri:{in:'17:30',out:'22:15'}, Sat:'D', Sun:{in:'12:00',out:'16:45'}},
+};
+
 const PLANTILLAS_HORARIO = {
   p1_capo4: {
     label: 'Plantilla 1 · Capo 4 (2 Full time + 4 Part time)',
@@ -14,15 +27,6 @@ const PLANTILLAS_HORARIO = {
       'OPERADOR PT 2': {Mon:{in:'17:30',out:'22:15'}, Tue:{in:'17:30',out:'22:15'}, Wed:'D', Thu:'D', Fri:{in:'13:15',out:'18:00'}, Sat:{in:'07:15',out:'12:00'}, Sun:{in:'15:30',out:'20:15'}},
       'OPERADOR PT 3': {Mon:{in:'17:30',out:'22:15'}, Tue:{in:'17:30',out:'22:15'}, Wed:'D', Thu:'D', Fri:{in:'17:30',out:'22:15'}, Sat:{in:'17:30',out:'22:15'}, Sun:{in:'17:30',out:'22:15'}},
       'OPERADOR PT 4': {Mon:'D', Tue:{in:'01:15',out:'06:00'}, Wed:{in:'17:30',out:'22:15'}, Thu:{in:'17:30',out:'22:15'}, Fri:{in:'17:30',out:'22:15'}, Sat:{in:'17:30',out:'22:15'}, Sun:'D'},
-      // Nombres de cargo anteriores a esta actualización — se conservan para
-      // que el personal ya registrado no se quede sin horario por defecto.
-      'ENCARGAD@': {Mon:{in:'13:15',out:'22:15'}, Tue:{in:'06:45',out:'15:45'}, Wed:{in:'12:00',out:'21:00'}, Thu:{in:'06:45',out:'15:45'}, Fri:'D', Sat:{in:'12:00',out:'21:00'}, Sun:{in:'06:45',out:'15:45'}},
-      'PARTIME 1': {Mon:{in:'08:15',out:'13:00'}, Tue:{in:'08:15',out:'13:00'}, Wed:{in:'08:15',out:'13:00'}, Thu:{in:'08:15',out:'13:00'}, Fri:'D', Sat:'D', Sun:{in:'08:15',out:'13:00'}},
-      'PARTIME 2': {Mon:{in:'15:30',out:'20:15'}, Tue:{in:'15:30',out:'20:15'}, Wed:'D', Thu:'D', Fri:{in:'15:30',out:'20:15'}, Sat:{in:'15:30',out:'20:15'}, Sun:{in:'15:30',out:'20:15'}},
-      'PARTIME 3': {Mon:{in:'17:30',out:'22:15'}, Tue:'D', Wed:'D', Thu:{in:'17:15',out:'22:00'}, Fri:{in:'17:30',out:'22:15'}, Sat:{in:'17:30',out:'22:15'}, Sun:{in:'17:30',out:'22:15'}},
-      'PARTIME 4': {Mon:'D', Tue:{in:'17:30',out:'22:15'}, Wed:{in:'17:30',out:'22:15'}, Thu:{in:'15:45',out:'20:30'}, Fri:'D', Sat:{in:'17:30',out:'22:15'}, Sun:{in:'17:15',out:'22:00'}},
-      'PARTIME 5': {Mon:{in:'06:45',out:'11:30'}, Tue:'D', Wed:{in:'07:00',out:'11:45'}, Thu:'D', Fri:{in:'08:15',out:'13:00'}, Sat:{in:'07:00',out:'11:45'}, Sun:{in:'07:00',out:'11:45'}},
-      'PARTIME 6': {Mon:'D', Tue:{in:'17:30',out:'22:15'}, Wed:{in:'17:30',out:'22:15'}, Thu:{in:'17:30',out:'22:15'}, Fri:{in:'17:30',out:'22:15'}, Sat:'D', Sun:{in:'12:00',out:'16:45'}},
     }
   },
   p2_capo5_6pt: {
@@ -39,7 +43,7 @@ const PLANTILLAS_HORARIO = {
     }
   },
   p2_capo5_4pt: {
-    label: 'Plantilla 2 · Capo 5 (3 Full time + 4 Part time) — ⚠ revisar horas antes de usar',
+    label: 'Plantilla 3 · Capo 5 (3 Full time + 4 Part time) — ⚠ revisar horas antes de usar',
     cargos: {
       'ADMINISTRADOR': {Mon:{in:'06:45',out:'15:45'}, Tue:'D', Wed:{in:'06:45',out:'15:45'}, Thu:{in:'13:15',out:'22:15'}, Fri:{in:'06:45',out:'15:45'}, Sat:{in:'06:45',out:'15:45'}, Sun:{in:'13:15',out:'22:15'}},
       'OPERADOR FT 1': {Mon:{in:'13:15',out:'22:15'}, Tue:{in:'06:45',out:'15:45'}, Wed:'D', Thu:{in:'06:45',out:'15:45'}, Fri:{in:'13:15',out:'22:15'}, Sat:{in:'13:15',out:'22:15'}, Sun:{in:'06:45',out:'15:45'}},
@@ -51,7 +55,7 @@ const PLANTILLAS_HORARIO = {
     }
   },
   p2_capo5_2pt: {
-    label: 'Plantilla 2 · Capo 5 (4 Full time + 2 Part time) — ⚠ revisar horas antes de usar',
+    label: 'Plantilla 4 · Capo 5 (4 Full time + 2 Part time) — ⚠ revisar horas antes de usar',
     cargos: {
       'ADMINISTRADOR': {Mon:{in:'06:45',out:'15:45'}, Tue:'D', Wed:{in:'06:45',out:'15:45'}, Thu:{in:'13:15',out:'22:15'}, Fri:{in:'06:45',out:'15:45'}, Sat:{in:'06:45',out:'15:45'}, Sun:{in:'13:15',out:'22:15'}},
       'OPERADOR FT 1': {Mon:{in:'13:15',out:'22:15'}, Tue:{in:'06:45',out:'15:45'}, Wed:{in:'13:15',out:'22:15'}, Thu:'D', Fri:{in:'13:15',out:'22:15'}, Sat:{in:'13:15',out:'22:15'}, Sun:{in:'06:45',out:'15:45'}},
@@ -79,29 +83,64 @@ function cambiarPlantillaHorario(id){
   if(!PLANTILLAS_HORARIO[id]) return;
   DB.horarioPlantilla = id;
   saveDB();
-  poblarCargoOptions();
   renderHorario();
   toast('Plantilla de horario actualizada','ok');
 }
 
-// Llena el <select> de "Cargo" en el formulario de Personal con los cargos
-// que trae la plantilla de horario elegida por la tienda.
-function poblarCargoOptions(valorExistente){
-  const sel = document.getElementById('pers-cargo');
-  if(!sel) return;
-  const cargos = Object.keys(plantillaActual().cargos);
-  let opciones = cargos.map(c=>`<option value="${c}">${c}</option>`);
-  if(valorExistente && !cargos.includes(valorExistente)){
-    opciones.unshift(`<option value="${valorExistente}">${valorExistente} (no está en la plantilla actual)</option>`);
-  }
-  sel.innerHTML = opciones.join('');
-  if(valorExistente) sel.value = valorExistente;
-}
-
 function templateFor(cargo,dk){
-  const t=plantillaActual().cargos[cargo];
+  const t = plantillaActual().cargos[cargo] || CARGOS_LEGACY[cargo];
   if(!t) return 'D';
   return t[dk]??'D';
+}
+
+// ── ASIGNACIÓN DE PERSONAL A CADA PUESTO DE LA PLANTILLA ─────────────
+// Cada plantilla guarda su propia asignación (qué colaborador ocupa cada
+// puesto), así no se pierde nada al cambiar de una plantilla a otra.
+function asignacionesActuales(){
+  if(!DB.horarioAsignaciones) DB.horarioAsignaciones = {};
+  const id = DB.horarioPlantilla || 'p1_capo4';
+  if(!DB.horarioAsignaciones[id]) DB.horarioAsignaciones[id] = {};
+  return DB.horarioAsignaciones[id];
+}
+
+// Dado un id de colaborador, devuelve el puesto (cargo) que tiene asignado
+// en la plantilla activa, o null si no está asignado a ninguno.
+function cargoDePersona(personId){
+  const asign = asignacionesActuales();
+  const entry = Object.entries(asign).find(([,pid])=>pid===personId);
+  return entry ? entry[0] : null;
+}
+
+function asignarPersonaCargo(cargoKey, personIdStr){
+  const asign = asignacionesActuales();
+  // Quita a esa persona de cualquier otro puesto de esta misma plantilla,
+  // para que nadie ocupe dos puestos a la vez.
+  Object.keys(asign).forEach(k=>{ if(String(asign[k])===personIdStr) delete asign[k]; });
+  if(personIdStr){ asign[cargoKey] = parseInt(personIdStr); }
+  saveDB();
+  renderHorario();
+}
+
+function renderAsignacionPersonal(){
+  const cont = document.getElementById('hor-asignacion');
+  if(!cont) return;
+  const asign = asignacionesActuales();
+  const cargos = Object.keys(plantillaActual().cargos);
+  const asignadosIds = new Set(Object.values(asign));
+  cont.innerHTML = `
+    <div style="font-size:12px;color:var(--text2);margin-bottom:.6rem"><i class="ti ti-users"></i> Asigna a quién de tu equipo le corresponde cada puesto de esta plantilla. Solo aparecerán en el cuadro de abajo las personas que asignes aquí.</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
+      ${cargos.map(c=>{
+        const pid = asign[c];
+        return `<div style="display:flex;flex-direction:column;gap:3px">
+          <label style="font-size:11px;font-weight:700;color:var(--text2)">${c}</label>
+          <select onchange="asignarPersonaCargo('${c}', this.value)" style="padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px">
+            <option value="">— Vacante —</option>
+            ${DB.personal.map(p=>`<option value="${p.id}" ${pid===p.id?'selected':''}>${p.nombre}</option>`).join('')}
+          </select>
+        </div>`;
+      }).join('')}
+    </div>`;
 }
 
 function getWeekKey(dateStr){
@@ -178,12 +217,22 @@ function saveTardanza(){
 
 function renderHorario(){
   poblarSelectPlantilla();
+  renderAsignacionPersonal();
   const dateVal=document.getElementById('hor-week').value || today();
   const weekKey=getWeekKey(dateVal);
   const weekDates=getWeekDates(weekKey);
   if(!DB.horarios[weekKey]) DB.horarios[weekKey]={};
   const wk=DB.horarios[weekKey];
-  DB.personal.forEach(p=>{
+
+  // Solo entran al cuadro las personas asignadas a un puesto en la
+  // plantilla activa, en el mismo orden en que aparecen los puestos.
+  const asign = asignacionesActuales();
+  const roster = Object.keys(plantillaActual().cargos)
+    .filter(cargoKey=>asign[cargoKey]!==undefined)
+    .map(cargoKey=>({cargoKey, persona: DB.personal.find(p=>p.id===asign[cargoKey])}))
+    .filter(r=>!!r.persona);
+
+  roster.forEach(({cargoKey,persona:p})=>{
     if(!wk[p.id]) wk[p.id]={};
     DAYKEYS.forEach(dk=>{
       const cell=wk[p.id][dk];
@@ -191,7 +240,7 @@ function renderHorario(){
         if(p.estado==='Inactivo'){
           wk[p.id][dk] = {tipo:'I', auto:true};
         } else {
-          const tpl=templateFor(p.cargo,dk);
+          const tpl=templateFor(cargoKey,dk);
           wk[p.id][dk] = (tpl==='D') ? {tipo:'D',auto:true} : {tipo:'H',in:tpl.in,out:tpl.out,auto:true};
         }
       }
@@ -199,13 +248,18 @@ function renderHorario(){
   });
 
   let html=`<div style="margin-bottom:8px;font-size:13px;color:var(--text2)"><i class="ti ti-calendar"></i> Semana del <strong>${fmtDate(weekDates[0])}</strong> al <strong>${fmtDate(weekDates[6])}</strong></div>`;
+  if(!roster.length){
+    html += `<div class="empty-state"><i class="ti ti-user-off"></i>Aún no has asignado a nadie a esta plantilla. Usa el panel de arriba para asignar a tu equipo.</div>`;
+    document.getElementById('hor-container').innerHTML=html;
+    return;
+  }
   html+=`<div class="hor-grid">`;
   html+=`<div class="hor-cell hor-header" style="text-align:left;padding-left:10px;align-items:flex-start">Colaborador</div>`;
   DAYS.forEach((d,i)=>html+=`<div class="hor-cell hor-header">${d}<br><span style="font-weight:400;font-size:10px;color:var(--text3)">${weekDates[i].slice(5).replace('-','/')}</span></div>`);
   html+=`<div class="hor-cell hor-header">Total</div>`;
 
-  DB.personal.forEach(p=>{
-    html+=`<div class="hor-cell hor-name" style="border-left:none"><strong>${p.nombre}</strong><span class="badge badge-blue hor-cargo-badge">${p.cargo}</span></div>`;
+  roster.forEach(({cargoKey,persona:p})=>{
+    html+=`<div class="hor-cell hor-name" style="border-left:none"><strong>${p.nombre}</strong><span class="badge badge-blue hor-cargo-badge">${cargoKey}</span></div>`;
     let totalSemana=0;
     DAYKEYS.forEach(dk=>{
       const cell=wk[p.id][dk]||{tipo:'D'};
@@ -236,7 +290,7 @@ function renderHorario(){
 
   // ── RESUMEN DE FALTAS Y TARDANZAS DE LA SEMANA ─────
   const resumen = {};
-  DB.personal.forEach(p=>{
+  roster.forEach(({persona:p})=>{
     resumen[p.id]={nombre:p.nombre, faltas:0, tardanzas:[], totalMinTard:0};
     DAYKEYS.forEach(dk=>{
       const cell=(wk[p.id]||{})[dk]||{};
@@ -288,8 +342,8 @@ function horTipoChange(sel){
   if(!DB.horarios[weekKey][pid]) DB.horarios[weekKey][pid]={};
   const prev=DB.horarios[weekKey][pid][dk]||{};
   if(tipo==='H'){
-    const p=DB.personal.find(x=>x.id===pid);
-    const tpl=templateFor(p?.cargo,dk);
+    const cargoAsignado = cargoDePersona(pid);
+    const tpl=templateFor(cargoAsignado,dk);
     DB.horarios[weekKey][pid][dk]={tipo:'H', in:prev.in||(tpl!=='D'?tpl.in:'09:00'), out:prev.out||(tpl!=='D'?tpl.out:'18:00'), auto:false};
     saveDB(); renderHorario();
   } else if(tipo==='T'){
